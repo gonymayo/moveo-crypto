@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dark background as default — our app uses a dark crypto theme */
+@layer base {
+  html {
+    @apply bg-surface text-slate-100 antialiased;
+  }
+
+  /* Scrollbar styling for dark theme */
+  ::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-surface;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-surface-border;
+  }
+}
+
+@layer components {
+  /* Reusable card style */
+  .card {
+    @apply rounded-xl border border-surface-border bg-surface-card p-5;
+  }
+
+  /* Primary button style */
+  .btn-primary {
+    @apply rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Secondary / ghost button */
+  .btn-ghost {
+    @apply rounded-lg border border-surface-border px-5 py-2.5 text-sm font-semibold text-slate-300 transition-colors hover:border-slate-400 hover:text-white;
+  }
+
+  /* Form input */
+  .input {
+    @apply w-full rounded-lg border border-surface-border bg-surface px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none transition-colors focus:border-brand focus:ring-1 focus:ring-brand;
+  }
+
+  /* Section label */
+  .section-label {
+    @apply text-xs font-semibold uppercase tracking-widest text-slate-400;
+  }
+}

@@ -1,0 +1,109 @@
+// Prisma schema for the Moveo Crypto Advisor app.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  name            String
+  passwordHash    String   @map("password_hash")
+  // Tracks whether the onboarding quiz has been completed.
+  preferencesSet  Boolean  @default(false) @map("preferences_set")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  preferences UserPreferences?
+  votes       Vote[]
+
+  @@map("users")
+}
+
+// ── User Preferences (one-to-one with User) ──────────────────────────────────
+
+model UserPreferences {
+  id     String @id @default(uuid())
+  userId String @unique @map("user_id")
+
+  // Multi-select: e.g. ["BTC", "ETH", "SOL"]
+  cryptoAssets String[] @map("crypto_assets")
+
+  // Single-select: "HODLer" | "DayTrader" | "NFTCollector" | "CuriousBeginner"
+  investorType String @map("investor_type")
+
+  // Multi-select: e.g. ["MarketNews", "Charts", "Social", "Fun"]
+  contentTypes String[] @map("content_types")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+// ── Votes (thumbs up / down on dashboard sections) ───────────────────────────
+
+model Vote {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+
+  // Which dashboard section was voted on.
+  section Section
+
+  // Identifier for the specific content item (article slug, coin id, "ai_<date>", "meme_<id>").
+  contentId String @map("content_id")
+
+  // The vote value.
+  vote VoteValue
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // A user can only vote once per content item per section.
+  @@unique([userId, section, contentId])
+  @@map("votes")
+}
+
+// ── Cached Content (TTL cache for external API responses) ────────────────────
+
+model CachedContent {
+  id        String   @id @default(uuid())
+  section   Section
+  // Composite cache key, e.g. "prices:BTC,ETH" or "ai:<userId>:2024-07-10"
+  cacheKey  String   @map("cache_key")
+  // The full JSON payload from the external API.
+  payload   Json
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([section, cacheKey])
+  @@map("cached_content")
+}
+
+// ── Enums ─────────────────────────────────────────────────────────────────────
+
+enum Section {
+  prices
+  news
+  ai_insight
+  meme
+}
+
+enum VoteValue {
+  up
+  down
+}
