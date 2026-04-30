@@ -26,8 +26,8 @@ A personalized AI-powered crypto investor dashboard built as a take-home assignm
 | Section | API |
 |---|---|
 | Coin Prices | [CoinGecko v3](https://www.coingecko.com/en/api) — free tier |
-| Market News | [CryptoPanic](https://cryptopanic.com/developers/api/) — free public key |
-| AI Insight | [OpenRouter](https://openrouter.ai/) — free credits (Mistral 7B / Llama 3) |
+| Market News | [CoinTelegraph RSS](https://cointelegraph.com/rss) — free, no API key required |
+| AI Insight | [OpenRouter](https://openrouter.ai/) — free tier (Google Gemma 3 27B) |
 | Crypto Memes | Reddit JSON API (`r/CryptoCurrency`) — no auth required |
 
 ---
