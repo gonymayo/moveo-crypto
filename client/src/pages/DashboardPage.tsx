@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { dashboardApi, type VoteSummary } from '@/api/dashboard';
+import { dashboardApi } from '@/api/dashboard';
 import { votesApi, type Section, type VoteValue } from '@/api/votes';
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -90,11 +90,8 @@ export default function DashboardPage() {
   // Local optimistic vote state so buttons respond instantly on click.
   const [localVotes, setLocalVotes] = useState<Map<string, 'up' | 'down'>>(new Map());
 
-  // Merge server votes with local optimistic votes (local takes priority).
-  const voteMap = new Map<string, 'up' | 'down'>([
-    ...(data?.votes ?? []).map((v: VoteSummary) => [`${v.section}:${v.contentId}`, v.vote] as [string, 'up' | 'down']),
-    ...localVotes,
-  ]);
+  // Only use local (in-session) votes — buttons always start unselected after a refresh.
+  const voteMap = new Map<string, 'up' | 'down'>(localVotes);
 
   const voteMutation = useMutation({
     mutationFn: votesApi.submit,
@@ -136,7 +133,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => refetch()}
+              onClick={() => { setLocalVotes(new Map()); refetch(); }}
               disabled={isFetching}
               className="text-xs text-slate-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
