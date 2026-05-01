@@ -22,21 +22,25 @@ function VoteButtons({
       <span className="text-xs text-slate-500">Helpful?</span>
       <button
         onClick={() => onVote(section, contentId, 'up')}
-        className={`rounded px-2 py-1 text-sm transition-colors ${
-          currentVote === 'up' ? 'text-green-400' : 'text-slate-500 hover:text-green-400'
+        className={`rounded-full px-3 py-1 text-sm font-medium transition-all ${
+          currentVote === 'up'
+            ? 'bg-green-500/20 ring-1 ring-green-500 text-green-400'
+            : 'text-slate-400 hover:bg-green-500/10 hover:text-green-400'
         }`}
         title="Thumbs up"
       >
-        &#128077;
+        👍
       </button>
       <button
         onClick={() => onVote(section, contentId, 'down')}
-        className={`rounded px-2 py-1 text-sm transition-colors ${
-          currentVote === 'down' ? 'text-red-400' : 'text-slate-500 hover:text-red-400'
+        className={`rounded-full px-3 py-1 text-sm font-medium transition-all ${
+          currentVote === 'down'
+            ? 'bg-red-500/20 ring-1 ring-red-500 text-red-400'
+            : 'text-slate-400 hover:bg-red-500/10 hover:text-red-400'
         }`}
         title="Thumbs down"
       >
-        &#128078;
+        👎
       </button>
     </div>
   );
