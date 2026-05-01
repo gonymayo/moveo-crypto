@@ -28,7 +28,7 @@ A personalized AI-powered crypto investor dashboard built as a take-home assignm
 | Coin Prices | [CoinGecko v3](https://www.coingecko.com/en/api) — free tier |
 | Market News | [CoinTelegraph RSS](https://cointelegraph.com/rss) — free, no API key required |
 | AI Insight | [OpenRouter](https://openrouter.ai/) — free tier (Google Gemma 3 27B) |
-| Crypto Memes | Reddit JSON API (`r/CryptoCurrency`) — no auth required |
+| Crypto Memes | [meme-api.com](https://meme-api.com) → Reddit (`r/cryptomemes`, `r/ethtrader`, `r/dogecoin`, `r/Bitcoin`) — no auth required |
 
 ---
 
@@ -94,7 +94,14 @@ cd client && npm run dev
 
 ## Database Access
 
-Render PostgreSQL dashboard credentials are provided separately in the submission form.
+The app uses a **Neon PostgreSQL** (free tier) database. Read-only access for reviewers:
+
+```
+postgresql://neondb_owner:npg_tRZ8hLWpq7jD@ep-super-violet-a4rewxag.us-east-1.aws.neon.tech/neondb?sslmode=require
+```
+
+You can connect with any PostgreSQL client (e.g. `psql`, TablePlus, DBeaver).
+Key tables: `users`, `user_preferences`, `votes`, `cached_content`.
 
 ---
 
