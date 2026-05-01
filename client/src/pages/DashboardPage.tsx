@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { dashboardApi, type VoteSummary } from '@/api/dashboard';
 import { votesApi, type Section, type VoteValue } from '@/api/votes';
@@ -75,27 +76,32 @@ export default function DashboardPage() {
   const { user, logout } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['dashboard'],
     queryFn: dashboardApi.get,
     // Refetch every 5 minutes automatically.
     refetchInterval: 5 * 60 * 1000,
   });
 
-  // Build a map from "section:contentId" → vote for O(1) lookup in the UI.
-  const voteMap = new Map<string, 'up' | 'down'>(
-    (data?.votes ?? []).map((v: VoteSummary) => [`${v.section}:${v.contentId}`, v.vote]),
-  );
+  // Local optimistic vote state so buttons respond instantly on click.
+  const [localVotes, setLocalVotes] = useState<Map<string, 'up' | 'down'>>(new Map());
+
+  // Merge server votes with local optimistic votes (local takes priority).
+  const voteMap = new Map<string, 'up' | 'down'>([
+    ...(data?.votes ?? []).map((v: VoteSummary) => [`${v.section}:${v.contentId}`, v.vote] as [string, 'up' | 'down']),
+    ...localVotes,
+  ]);
 
   const voteMutation = useMutation({
     mutationFn: votesApi.submit,
     onSuccess: () => {
-      // Invalidate so the votes map is refreshed.
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 
   function handleVote(section: Section, contentId: string, vote: VoteValue) {
+    // Update UI immediately (optimistic), then sync with server.
+    setLocalVotes((prev) => new Map(prev).set(`${section}:${contentId}`, vote));
     voteMutation.mutate({ section, contentId, vote });
   }
 
@@ -116,9 +122,10 @@ export default function DashboardPage() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => refetch()}
-              className="text-xs text-slate-400 hover:text-white transition-colors"
+              disabled={isFetching}
+              className="text-xs text-slate-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Refresh
+              {isFetching ? 'Refreshing...' : 'Refresh'}
             </button>
             <button onClick={logout} className="btn-ghost text-xs">
               Sign Out
