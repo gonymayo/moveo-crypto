@@ -2,9 +2,9 @@ import { Section } from '@prisma/client';
 import { getCached, setCached } from './cache';
 import logger from '../utils/logger';
 
-const BASE_URL = process.env.COINGECKO_BASE_URL ?? 'https://api.coingecko.com/api/v3';
+// Binance public API — no key required, no cloud-IP rate limiting.
+const BINANCE_URL = 'https://api.binance.com/api/v3/ticker/24hr';
 
-// Cache coin prices for 5 minutes to respect the free-tier rate limit (30 req/min).
 const CACHE_TTL_SECONDS = 5 * 60;
 
 export interface CoinPrice {
@@ -17,58 +17,100 @@ export interface CoinPrice {
   image: string;
 }
 
-/**
- * Maps user-friendly ticker symbols (e.g. "BTC") to CoinGecko coin IDs.
- * CoinGecko uses slugs like "bitcoin", not tickers.
- */
-const TICKER_TO_ID: Record<string, string> = {
-  BTC: 'bitcoin',
-  ETH: 'ethereum',
-  SOL: 'solana',
-  BNB: 'binancecoin',
-  XRP: 'ripple',
-  DOGE: 'dogecoin',
-  ADA: 'cardano',
-  AVAX: 'avalanche-2',
-  MATIC: 'matic-network',
-  DOT: 'polkadot',
+const TICKER_META: Record<string, { name: string; binanceSymbol: string; image: string }> = {
+  BTC: {
+    name: 'Bitcoin',
+    binanceSymbol: 'BTCUSDT',
+    image: 'https://coin-images.coingecko.com/coins/images/1/large/bitcoin.png',
+  },
+  ETH: {
+    name: 'Ethereum',
+    binanceSymbol: 'ETHUSDT',
+    image: 'https://coin-images.coingecko.com/coins/images/279/large/ethereum.png',
+  },
+  SOL: {
+    name: 'Solana',
+    binanceSymbol: 'SOLUSDT',
+    image: 'https://coin-images.coingecko.com/coins/images/4128/large/solana.png',
+  },
+  BNB: {
+    name: 'BNB',
+    binanceSymbol: 'BNBUSDT',
+    image: 'https://coin-images.coingecko.com/coins/images/825/large/bnb-icon2_2x.png',
+  },
+  XRP: {
+    name: 'XRP',
+    binanceSymbol: 'XRPUSDT',
+    image: 'https://coin-images.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png',
+  },
+  DOGE: {
+    name: 'Dogecoin',
+    binanceSymbol: 'DOGEUSDT',
+    image: 'https://coin-images.coingecko.com/coins/images/5/large/dogecoin.png',
+  },
+  ADA: {
+    name: 'Cardano',
+    binanceSymbol: 'ADAUSDT',
+    image: 'https://coin-images.coingecko.com/coins/images/975/large/cardano.png',
+  },
+  AVAX: {
+    name: 'Avalanche',
+    binanceSymbol: 'AVAXUSDT',
+    image: 'https://coin-images.coingecko.com/coins/images/12559/large/Avalanche_Circle_RedWhite_Trans.png',
+  },
+  MATIC: {
+    name: 'Polygon',
+    binanceSymbol: 'MATICUSDT',
+    image: 'https://coin-images.coingecko.com/coins/images/4713/large/matic-token-icon.png',
+  },
+  DOT: {
+    name: 'Polkadot',
+    binanceSymbol: 'DOTUSDT',
+    image: 'https://coin-images.coingecko.com/coins/images/12171/large/polkadot.png',
+  },
 };
 
-/**
- * Fetches live prices for the user's chosen crypto assets.
- * Results are cached per coin set to avoid hammering the free-tier limit.
- */
-export async function getPrices(tickers: string[]): Promise<CoinPrice[]> {
-  const coinIds = tickers
-    .map((t) => TICKER_TO_ID[t.toUpperCase()])
-    .filter(Boolean)
-    .join(',');
+interface BinanceTicker {
+  symbol: string;
+  lastPrice: string;
+  priceChangePercent: string;
+}
 
-  const cacheKey = `coins:${coinIds}`;
+export async function getPrices(tickers: string[]): Promise<CoinPrice[]> {
+  const validTickers = tickers.map((t) => t.toUpperCase()).filter((t) => TICKER_META[t]);
+
+  if (validTickers.length === 0) return [];
+
+  const cacheKey = `coins:${validTickers.join(',')}`;
   const cached = await getCached<CoinPrice[]>(Section.prices, cacheKey);
   if (cached) return cached;
 
-  const url =
-    `${BASE_URL}/coins/markets` +
-    `?vs_currency=usd` +
-    `&ids=${coinIds}` +
-    `&order=market_cap_desc` +
-    `&per_page=20` +
-    `&page=1` +
-    `&sparkline=false` +
-    `&price_change_percentage=24h`;
+  const symbols = JSON.stringify(validTickers.map((t) => TICKER_META[t].binanceSymbol));
+  const url = `${BINANCE_URL}?symbols=${encodeURIComponent(symbols)}`;
 
-  logger.debug('Fetching coin prices from CoinGecko', { coinIds });
+  logger.debug('Fetching coin prices from Binance', { tickers: validTickers.join(',') });
 
-  const response = await fetch(url, {
-    headers: { Accept: 'application/json' },
-  });
+  const response = await fetch(url, { headers: { Accept: 'application/json' } });
 
   if (!response.ok) {
-    throw new Error(`CoinGecko API error: ${response.status} ${response.statusText}`);
+    throw new Error(`Binance API error: ${response.status} ${response.statusText}`);
   }
 
-  const data = (await response.json()) as CoinPrice[];
+  const raw = (await response.json()) as BinanceTicker[];
+
+  const data: CoinPrice[] = raw.map((item) => {
+    const ticker = validTickers.find((t) => TICKER_META[t].binanceSymbol === item.symbol)!;
+    const meta = TICKER_META[ticker];
+    return {
+      id: ticker.toLowerCase(),
+      symbol: ticker.toLowerCase(),
+      name: meta.name,
+      current_price: parseFloat(item.lastPrice),
+      price_change_percentage_24h: parseFloat(item.priceChangePercent),
+      market_cap: 0,
+      image: meta.image,
+    };
+  });
 
   await setCached(Section.prices, cacheKey, data, CACHE_TTL_SECONDS);
 
