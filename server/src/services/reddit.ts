@@ -1,8 +1,10 @@
 import logger from '../utils/logger';
 
-// meme-api.com is a free service that fetches Reddit posts.
-// Unlike direct Reddit requests, it works reliably from cloud servers.
-const MEME_API_URL = 'https://meme-api.com/gimme/CryptoCurrency';
+// meme-api.com works reliably from cloud servers unlike direct Reddit API calls.
+const MEME_API_BASE = 'https://meme-api.com/gimme';
+
+// Rotate across multiple crypto subreddits for variety.
+const SUBREDDITS = ['cryptomemes', 'ethtrader', 'dogecoin', 'Bitcoin'];
 
 export interface CryptoMeme {
   id: string;
@@ -13,44 +15,58 @@ export interface CryptoMeme {
   subreddit: string;
 }
 
-interface MemeApiResponse {
+interface MemeApiMeme {
   postLink: string;
   subreddit: string;
   title: string;
   url: string;
   ups: number;
-  preview: string[];
+  nsfw: boolean;
+}
+
+interface MemeApiBatchResponse {
+  count: number;
+  memes: MemeApiMeme[];
 }
 
 /**
- * Fetches a fresh random crypto meme on every call via meme-api.com.
- * No caching — each dashboard load gets a different meme.
+ * Fetches a random crypto meme from a randomly-chosen subreddit.
+ * Requests a batch of 5 and picks one at random for maximum variety.
  */
 export async function getMeme(): Promise<CryptoMeme> {
   try {
-    logger.debug('Fetching meme from meme-api.com');
+    // Pick a random subreddit each time.
+    const subreddit = SUBREDDITS[Math.floor(Math.random() * SUBREDDITS.length)];
 
-    const response = await fetch(MEME_API_URL, {
+    logger.debug('Fetching meme', { subreddit });
+
+    const response = await fetch(`${MEME_API_BASE}/${subreddit}/5`, {
       headers: { Accept: 'application/json' },
     });
 
     if (!response.ok) {
-      logger.warn('meme-api.com failed, using static fallback', { status: response.status });
+      logger.warn('meme-api.com failed', { status: response.status });
       return getStaticFallback();
     }
 
-    const data = (await response.json()) as MemeApiResponse;
+    const data = (await response.json()) as MemeApiBatchResponse;
+
+    if (!data.memes || data.memes.length === 0) {
+      return getStaticFallback();
+    }
+
+    const meme = data.memes[Math.floor(Math.random() * data.memes.length)];
 
     return {
-      id: data.postLink,
-      title: data.title,
-      imageUrl: data.url,
-      postUrl: data.postLink,
-      score: data.ups,
-      subreddit: data.subreddit,
+      id: meme.postLink,
+      title: meme.title,
+      imageUrl: meme.url,
+      postUrl: meme.postLink,
+      score: meme.ups,
+      subreddit: meme.subreddit,
     };
   } catch (err) {
-    logger.warn('meme-api.com error, using static fallback', { error: (err as Error).message });
+    logger.warn('getMeme error, using fallback', { error: (err as Error).message });
     return getStaticFallback();
   }
 }
@@ -62,25 +78,25 @@ const FALLBACK_MEMES: CryptoMeme[] = [
     id: 'fallback-1',
     title: 'When BTC is down but you bought the dip',
     imageUrl: 'https://i.imgflip.com/5q7n7n.png',
-    postUrl: 'https://reddit.com/r/CryptoCurrency',
+    postUrl: 'https://reddit.com/r/cryptomemes',
     score: 9999,
-    subreddit: 'CryptoCurrency',
+    subreddit: 'cryptomemes',
   },
   {
     id: 'fallback-2',
     title: 'Me checking my portfolio every 5 minutes',
     imageUrl: 'https://i.imgflip.com/7xkwxr.png',
-    postUrl: 'https://reddit.com/r/CryptoCurrency',
+    postUrl: 'https://reddit.com/r/cryptomemes',
     score: 8888,
-    subreddit: 'CryptoCurrency',
+    subreddit: 'cryptomemes',
   },
   {
     id: 'fallback-3',
     title: 'HODLing through the bear market like',
     imageUrl: 'https://i.imgflip.com/61yfbu.png',
-    postUrl: 'https://reddit.com/r/CryptoCurrency',
+    postUrl: 'https://reddit.com/r/cryptomemes',
     score: 7777,
-    subreddit: 'CryptoCurrency',
+    subreddit: 'cryptomemes',
   },
 ];
 
