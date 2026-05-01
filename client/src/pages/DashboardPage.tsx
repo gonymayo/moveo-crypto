@@ -98,8 +98,19 @@ export default function DashboardPage() {
 
   const voteMutation = useMutation({
     mutationFn: votesApi.submit,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    onSuccess: (_, variables) => {
+      // Update only the votes slice in the cache — do NOT refetch the full
+      // dashboard, as that would load a new random meme and reset the page.
+      queryClient.setQueryData(['dashboard'], (old: typeof data) => {
+        if (!old) return old;
+        const filtered = old.votes.filter(
+          (v) => !(v.section === variables.section && v.contentId === variables.contentId),
+        );
+        return {
+          ...old,
+          votes: [...filtered, { section: variables.section, contentId: variables.contentId, vote: variables.vote }],
+        };
+      });
     },
   });
 
