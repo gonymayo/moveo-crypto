@@ -79,10 +79,11 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {tab === 'register' && (
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-400">
+              <label htmlFor="name" className="mb-1.5 block text-xs font-medium text-slate-400">
                 Full Name
               </label>
               <input
+                id="name"
                 className="input"
                 type="text"
                 placeholder="Satoshi Nakamoto"
@@ -95,8 +96,9 @@ export default function LoginPage() {
           )}
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-400">Email</label>
+            <label htmlFor="email" className="mb-1.5 block text-xs font-medium text-slate-400">Email</label>
             <input
+              id="email"
               className="input"
               type="email"
               placeholder="you@example.com"
@@ -108,8 +110,9 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-400">Password</label>
+            <label htmlFor="password" className="mb-1.5 block text-xs font-medium text-slate-400">Password</label>
             <input
+              id="password"
               className="input"
               type="password"
               placeholder={tab === 'register' ? 'Min. 8 characters' : '••••••••'}

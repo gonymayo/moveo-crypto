@@ -83,8 +83,9 @@ export default function DashboardPage() {
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['dashboard'],
     queryFn: dashboardApi.get,
-    // Refetch every 5 minutes automatically.
+    // Refetch every 5 minutes, but only when the tab is visible.
     refetchInterval: 5 * 60 * 1000,
+    refetchIntervalInBackground: false,
   });
 
   // Local optimistic vote state so buttons respond instantly on click.
@@ -166,7 +167,12 @@ export default function DashboardPage() {
                 {data.prices.map((coin) => (
                   <div key={coin.id} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <img src={coin.image} alt={coin.name} className="h-6 w-6 rounded-full" />
+                      <img
+                        src={coin.image}
+                        alt={coin.name}
+                        className="h-6 w-6 rounded-full"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
                       <div>
                         <p className="text-sm font-medium text-white">{coin.name}</p>
                         <p className="text-xs uppercase text-slate-500">{coin.symbol}</p>

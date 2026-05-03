@@ -34,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // On mount, attempt to restore the session from localStorage.
   // This keeps the user logged in across page refreshes.
   useEffect(() => {
+    let isMounted = true;
     const storedToken = localStorage.getItem(TOKEN_KEY);
 
     if (!storedToken) {
@@ -45,14 +46,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authApi
       .me(storedToken)
       .then(({ user }) => {
+        if (!isMounted) return;
         setToken(storedToken);
         setUser(user);
       })
       .catch(() => {
+        if (!isMounted) return;
         // Token is expired or invalid — clear it.
         localStorage.removeItem(TOKEN_KEY);
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => { isMounted = false; };
   }, []);
 
   function login(newToken: string, newUser: User) {
