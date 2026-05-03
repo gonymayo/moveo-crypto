@@ -7,6 +7,11 @@ import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import './index.css';
 
+// Wake up the Render server immediately on app load.
+// Render free tier sleeps after 15 min of inactivity and takes ~50s to wake up.
+// Pinging /health now means the server is ready by the time the user clicks login.
+fetch(`${import.meta.env.VITE_API_URL ?? ''}/health`).catch(() => {});
+
 // Configure TanStack Query with sensible defaults.
 const queryClient = new QueryClient({
   defaultOptions: {
