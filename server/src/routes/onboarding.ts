@@ -14,7 +14,7 @@ router.use(requireAuth);
 const preferencesSchema = z.object({
   // At least one crypto asset must be selected.
   cryptoAssets: z
-    .array(z.string().min(1))
+    .array(z.enum(['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE', 'ADA', 'AVAX', 'MATIC', 'DOT']))
     .min(1, 'Select at least one crypto asset'),
 
   investorType: z.enum(['HODLer', 'DayTrader', 'NFTCollector', 'CuriousBeginner']),
@@ -39,18 +39,18 @@ router.post('/preferences', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
 
   try {
-    // Upsert — allows users to update their preferences later if needed.
-    const preferences = await prisma.userPreferences.upsert({
-      where: { userId },
-      create: { userId, cryptoAssets, investorType, contentTypes },
-      update: { cryptoAssets, investorType, contentTypes },
-    });
-
-    // Mark onboarding as complete so the frontend stops redirecting.
-    await prisma.user.update({
-      where: { id: userId },
-      data: { preferencesSet: true },
-    });
+    // Upsert preferences and mark onboarding complete atomically.
+    const [preferences] = await prisma.$transaction([
+      prisma.userPreferences.upsert({
+        where: { userId },
+        create: { userId, cryptoAssets, investorType, contentTypes },
+        update: { cryptoAssets, investorType, contentTypes },
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: { preferencesSet: true },
+      }),
+    ]);
 
     logger.info('User preferences saved', { userId, investorType });
 

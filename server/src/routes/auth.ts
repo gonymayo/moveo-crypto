@@ -49,9 +49,9 @@ router.post('/register', async (req: Request, res: Response) => {
     });
 
     // 4. Issue a JWT.
-    const token = signToken({ userId: user.id, email: user.email });
+    const token = signToken({ userId: user.id });
 
-    logger.info('New user registered', { userId: user.id, email: user.email });
+    logger.info('New user registered', { userId: user.id });
 
     res.status(201).json({ token, user });
   } catch (err) {
@@ -85,7 +85,7 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     // 2. Issue a JWT.
-    const token = signToken({ userId: user.id, email: user.email });
+    const token = signToken({ userId: user.id });
 
     logger.info('User logged in', { userId: user.id });
 

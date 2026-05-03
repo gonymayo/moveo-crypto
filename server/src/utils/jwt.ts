@@ -3,7 +3,6 @@ import jwt, { SignOptions } from 'jsonwebtoken';
 // Shape of the data we embed inside every JWT.
 export interface JwtPayload {
   userId: string;
-  email: string;
 }
 
 /**

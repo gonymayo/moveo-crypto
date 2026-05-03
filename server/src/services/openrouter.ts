@@ -4,7 +4,7 @@ import logger from '../utils/logger';
 
 const BASE_URL = process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1';
 const API_KEY = process.env.OPENROUTER_API_KEY;
-const MODEL = process.env.OPENROUTER_MODEL ?? 'mistralai/mistral-7b-instruct:free';
+const MODEL = process.env.OPENROUTER_MODEL ?? 'minimax/minimax-m2.5:free';
 
 // Cache the AI insight for a full day — one insight per user per day is the goal.
 const CACHE_TTL_SECONDS = 24 * 60 * 60;
@@ -71,8 +71,11 @@ export async function getAiInsight(
     model: string;
   };
 
+  const content = json.choices?.[0]?.message?.content;
+  if (!content) throw new Error('OpenRouter returned an empty response');
+
   const insight: AiInsight = {
-    text: json.choices[0].message.content.trim(),
+    text: content.trim(),
     model: json.model,
     generatedAt: new Date().toISOString(),
   };
