@@ -5,7 +5,7 @@ A personalized AI-powered crypto investor dashboard built as a take-home assignm
 ## Live Demo
 
 - **Frontend:** [https://moveo-crypto.vercel.app](https://moveo-crypto.vercel.app)
-- **Backend API:** [https://moveo-crypto-server.onrender.com](https://moveo-crypto-server.onrender.com/health) (JSON API — not a webpage. Visit `/health` to verify it's running)
+- **Backend API:** [https://moveo-crypto-server.onrender.com/health](https://moveo-crypto-server.onrender.com/health)
 
 ---
 
